@@ -1,0 +1,9 @@
+__pycache__/
+*.py[cod]
+*.html
+.DS_Store
+.env
+.venv/
+output/
+*.pptx
+*.pdf

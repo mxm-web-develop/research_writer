@@ -1,0 +1,24 @@
+---
+description: Deep research workflow — report.md first, then script-built PDF/PPT deliverables (research_writer skill).
+globs:
+  - report.md
+  - sources.md
+  - output/**
+---
+
+# research_writer
+
+When the user needs deep research with formal deliverables:
+
+1. Write `report.md` (standard 8 sections) and `sources.md` (≥5 sources with URL, publisher, access date).
+2. Do not treat PPT or speaker notes as a second fact source.
+3. After markdown is complete, run from the skill root:
+
+```bash
+python3 scripts/build_bundle.py --input report.md --outdir output --sources sources.md
+```
+
+4. If a stage fails, rerun only that stage: `--stage deck|notes|pdf|ppt|validate`.
+5. Do not declare completion until `validate` passes.
+
+Read `SKILL.md` and `references/research-methodology.md` for quality gates.
