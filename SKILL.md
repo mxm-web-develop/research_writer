@@ -1,7 +1,7 @@
 ---
 name: research_writer
 description: Cross-agent deep research skill for Claude Code, Cursor, OpenClaw, and Hermes — report.md as source of truth, then sources/deck/notes/PDF/PPT via bundled scripts.
-version: 2.1.0
+version: 3.3.0
 author: HanfengZhang_mxm
 license: MIT
 metadata:
@@ -54,6 +54,7 @@ python3 scripts/build_bundle.py --input report.md --outdir output --sources sour
 
 ```bash
 python3 scripts/build_bundle.py --input report.md --outdir output --stage deck
+python3 scripts/build_bundle.py --input report.md --outdir output --stage images
 python3 scripts/build_bundle.py --input report.md --outdir output --stage pdf
 python3 scripts/build_bundle.py --input report.md --outdir output --stage ppt
 python3 scripts/build_bundle.py --input report.md --outdir output --sources sources.md --stage validate
@@ -90,11 +91,11 @@ python3 scripts/build_bundle.py --input report.md --outdir output --sources sour
 
 ## Bundled Files
 
-**Scripts:** `bootstrap.py`, `doctor.py`, `build_bundle.py`, `generate_pdf.py`, `generate_ppt.py`, `validate.py`, `common.py`
+**Scripts:** `bootstrap.py`, `doctor.py`, `build_bundle.py`, `generate_images.py`, `generate_pdf.py`, `generate_ppt.py`, `validate.py`, `common.py`, `images.py`
 
-**References:** `research-methodology.md`, `sources-format.md`, `pdf-output.md`, `installation.md`, `troubleshooting.md`, agent usage docs
+**References:** `research-methodology.md`, `sources-format.md`, `images.md`, `pdf-output.md`, `installation.md`, `troubleshooting.md`, agent usage docs
 
-**Templates:** `sample-report.md`, `sample-sources.md`, `requirements.txt`
+**Templates:** `sample-report.md`, `sample-sources.md`, `requirements.txt`, `image.env.example`
 
 ## Quality Gates
 
@@ -122,8 +123,42 @@ project/
 │   ├── speaker-notes.md
 │   ├── report.pdf
 │   └── report.pptx
-└── assets/
+├── assets/              # local images + AI-generated PNGs
+└── image.env            # optional GPT-image API config (do not commit)
 ```
+
+## Images
+
+Reports and PDFs support **local images** and **GPT-image-2** generation. See `references/images.md`.
+
+### 用户要求「为话题/项目生成配图」时（Agent 必遵）
+
+**不要立刻调 API 或写 directive。** 按顺序执行：
+
+1. **询问凭证**（若项目尚无 `image.env`）：向用户索取 GPT-image-2 的 **API URL** 与 **API Key**（及可选 model / size）。说明密钥只写入本地 `image.env`，不会提交 git。
+2. **分析话题/项目**：阅读 `report.md`、项目文档或用户描述；梳理结构、读者、交付形态（PDF/PPT）。
+3. **输出配图建议**（仅建议，不生成）：列出建议配图的位置、类型（本地 / AI）、用途、推荐 prompt 草案；标注优先级（高/中/低）。**等待用户确认**后再继续。
+4. **用户确认后**：将批准的条目写入 `<!-- rw-image ... -->` 或 `![alt](assets/...)`，写入 `image.env`，再运行 `generate_images.py` 或 `build_bundle --generate-images`。
+
+建议回复格式见 `references/images.md` §「配图建议模板」。
+
+### 构建命令
+
+1. Mark sections with `<!-- rw-image ... -->` directives (or standard `![alt](assets/...)`).
+2. Configure `image.env` from `templates/image.env.example` (URL + key + model).
+3. Generate images (interactive):
+
+```bash
+python3 scripts/generate_images.py --input report.md
+```
+
+4. Build PDF (embeds images as base64 for Chrome print):
+
+```bash
+python3 scripts/build_bundle.py --input report.md --outdir output --sources sources.md --generate-images
+```
+
+One-shot with approval already given: add `--yes`.
 
 ## Portability
 

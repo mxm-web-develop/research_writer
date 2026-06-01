@@ -12,13 +12,20 @@ When the user needs deep research with formal deliverables:
 
 1. Write `report.md` (standard 8 sections) and `sources.md` (≥5 sources with URL, publisher, access date).
 2. Do not treat PPT or speaker notes as a second fact source.
-3. After markdown is complete, run from the skill root:
+3. After markdown is complete, run from the **project directory** (where `report.md` lives). Use the skill's bundled script by absolute path:
 
 ```bash
-python3 scripts/build_bundle.py --input report.md --outdir output --sources sources.md
+python3 ~/.cursor/skills/research_writer/scripts/build_bundle.py --input report.md --outdir output --sources sources.md
 ```
 
-4. If a stage fails, rerun only that stage: `--stage deck|notes|pdf|ppt|validate`.
-5. Do not declare completion until `validate` passes.
+(Project-local skill: `.cursor/skills/research_writer/scripts/build_bundle.py`. Run `doctor.py` to print the resolved path.)
+
+4. If a stage fails, rerun only that stage: `--stage images|deck|notes|pdf|ppt|validate`.
+5. **配图请求**（用户要为话题/项目生成插图时）：
+   - 先问 GPT-image-2 的 **API URL + Key**（若无 `image.env`）
+   - 分析 report/项目，**回复配图建议表**（位置、类型、prompt 草案、优先级）
+   - **等用户确认**后再写 `rw-image` directive 并运行 `--stage images`
+   - 详见 `references/images.md`
+6. Do not declare completion until `validate` passes.
 
 Read `SKILL.md` and `references/research-methodology.md` for quality gates.

@@ -9,7 +9,8 @@ Key requirements:
 1. PDF is derived from `report.md`
 2. TOC should reflect report headings
 3. references section must be separated and preserved
-4. use real file paths for Chrome print-to-pdf
+4. local and generated images under `assets/` are embedded into PDF (see `references/images.md`)
+5. use real file paths for Chrome print-to-pdf
 
 Recommended command:
 

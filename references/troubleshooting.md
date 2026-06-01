@@ -6,6 +6,12 @@
 - macOS: install Google Chrome. Linux: `google-chrome` or `chromium`.
 - Re-run: `python3 scripts/build_bundle.py --input report.md --outdir output --stage pdf`
 
+## TOC page numbers look wrong
+
+- Regenerate after `pip install -r templates/requirements.txt` (needs `pypdf`).
+- `generate_pdf.py` uses a two-pass layout: measure body pages first, then insert TOC and compute real page numbers.
+- If headings are missing from PDF text extraction, adjacent section page numbers are used as fallback.
+
 ## Wrong Python / missing modules
 
 Scripts use `sys.executable` (the same `python3` you invoke). If modules are missing:

@@ -19,6 +19,10 @@ REQUIRED_SECTIONS = [
     'References',
 ]
 
+def skill_root() -> Path:
+    return Path(__file__).resolve().parent.parent
+
+
 CHROME_CANDIDATES = [
     Path('/Applications/Google Chrome.app/Contents/MacOS/Google Chrome'),
     Path('/Applications/Chromium.app/Contents/MacOS/Chromium'),

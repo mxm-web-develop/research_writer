@@ -6,9 +6,9 @@ import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from common import find_chrome
+from common import find_chrome, skill_root
 
-MODULES = ['markdown', 'pptx', 'lxml']
+MODULES = ['markdown', 'pptx', 'lxml', 'pypdf', 'requests']
 
 
 def main() -> int:
@@ -28,6 +28,13 @@ def main() -> int:
     else:
         ok = False
         print('chrome: MISSING (install Google Chrome or Chromium for PDF export)')
+    root = skill_root()
+    print()
+    print('Build from your project directory (where report.md lives):')
+    print(
+        f'  python3 {root}/scripts/build_bundle.py '
+        '--input report.md --outdir output --sources sources.md'
+    )
     return 0 if ok else 1
 
 

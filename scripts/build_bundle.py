@@ -8,7 +8,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from common import run_script, split_sections, write_deck_outline, write_speaker_notes
 
-STAGES = ('all', 'deck', 'notes', 'pdf', 'ppt', 'validate')
+STAGES = ('all', 'images', 'deck', 'notes', 'pdf', 'ppt', 'validate')
 
 
 def main() -> int:
@@ -19,6 +19,9 @@ def main() -> int:
     parser.add_argument('--title', default=None, help='optional explicit title')
     parser.add_argument('--stage', default='all', choices=STAGES, help='run one pipeline stage')
     parser.add_argument('--min-sources', type=int, default=5, help='minimum sources for validate stage')
+    parser.add_argument('--assets', default='assets', help='assets directory relative to report.md')
+    parser.add_argument('--generate-images', action='store_true', help='call GPT-image API for pending rw-image directives')
+    parser.add_argument('--yes', action='store_true', help='skip interactive image generation confirmation')
     args = parser.parse_args()
 
     report = Path(args.input).resolve()
@@ -39,6 +42,20 @@ def main() -> int:
 
     built: list[Path] = []
 
+    if stage == 'images':
+        img_args = ['--input', str(report), '--assets', args.assets]
+        if args.yes:
+            img_args.append('--yes')
+        run_script(base / 'generate_images.py', img_args)
+    elif stage == 'all':
+        dry_or_gen = ['--input', str(report), '--assets', args.assets]
+        if args.generate_images:
+            if args.yes:
+                dry_or_gen.append('--yes')
+            run_script(base / 'generate_images.py', dry_or_gen)
+        else:
+            run_script(base / 'generate_images.py', dry_or_gen + ['--dry-run'])
+
     if stage in ('all', 'deck'):
         write_deck_outline(deck_outline, title, sections)
         built.append(deck_outline)
@@ -48,10 +65,17 @@ def main() -> int:
         built.append(speaker_notes)
 
     if stage in ('all', 'pdf'):
-        run_script(
-            base / 'generate_pdf.py',
-            ['--input', str(report), '--output', str(pdf_out), '--title', title],
-        )
+        pdf_args = [
+            '--input', str(report),
+            '--output', str(pdf_out),
+            '--title', title,
+            '--assets', args.assets,
+        ]
+        if args.generate_images:
+            pdf_args.append('--generate-images')
+        if args.yes:
+            pdf_args.append('--yes')
+        run_script(base / 'generate_pdf.py', pdf_args)
         built.append(pdf_out)
 
     if stage in ('all', 'ppt'):
@@ -76,6 +100,7 @@ def main() -> int:
             '--sources', str(sources),
             '--outdir', str(outdir),
             '--min-sources', str(args.min_sources),
+            '--assets', args.assets,
         ]
         run_script(base / 'validate.py', validate_args)
 

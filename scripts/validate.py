@@ -8,6 +8,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from common import REQUIRED_SECTIONS, count_sources, split_sections
+from images import validate_images
 
 REPORT_SECTION_PATTERN = re.compile(r'^##\s+(.+)$', re.MULTILINE)
 
@@ -19,6 +20,7 @@ def main() -> int:
     parser.add_argument('--outdir', default=None, help='output dir with derived artifacts')
     parser.add_argument('--min-sources', type=int, default=5)
     parser.add_argument('--relax-sources', action='store_true')
+    parser.add_argument('--assets', default='assets', help='assets directory relative to report.md')
     args = parser.parse_args()
 
     report = Path(args.report)
@@ -41,6 +43,8 @@ def main() -> int:
                 warnings.append(f'report missing recommended section: {req}')
         if not re.search(r'\d{4}[-/年]', text):
             warnings.append('report may lack date/time context on key facts')
+        for w in validate_images(text, report.parent, Path(args.assets)):
+            warnings.append(w)
 
     if sources.exists():
         src_text = sources.read_text(encoding='utf-8')

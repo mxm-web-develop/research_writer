@@ -12,6 +12,9 @@ Define the question clearly.
 ## Deep Analysis
 Add the main evidence-backed analysis here.
 
+<!-- Optional: local image — ![caption](assets/figure.png) -->
+<!-- Optional: AI image — see references/images.md for rw-image directive format -->
+
 ## Comparison / Alternatives
 Compare the major options.
 
