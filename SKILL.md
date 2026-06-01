@@ -1,7 +1,7 @@
 ---
 name: research_writer
 description: Cross-agent deep research skill for Claude Code, Cursor, OpenClaw, and Hermes — report.md as source of truth, then sources/deck/notes/PDF/PPT via bundled scripts.
-version: 3.3.0
+version: 3.4.1
 author: HanfengZhang_mxm
 license: MIT
 metadata:
@@ -159,6 +159,8 @@ python3 scripts/build_bundle.py --input report.md --outdir output --sources sour
 ```
 
 One-shot with approval already given: add `--yes`.
+
+**PDF 封面**：独占一整页 A4；四级字体（大标题 / 副标题 / 作者 / 日期）。可从 report 首行 `# 标题（副标题）`、YAML frontmatter 或 `<!-- rw-cover ... -->` 解析，详见 `references/pdf-output.md`。
 
 ## Portability
 

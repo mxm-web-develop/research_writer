@@ -16,7 +16,10 @@ def main() -> int:
     parser.add_argument('--input', required=True, help='path to report.md')
     parser.add_argument('--outdir', required=True, help='output directory')
     parser.add_argument('--sources', default=None, help='path to sources.md (default: sibling of report)')
-    parser.add_argument('--title', default=None, help='optional explicit title')
+    parser.add_argument('--title', default=None, help='optional explicit cover title')
+    parser.add_argument('--subtitle', default=None, help='optional cover subtitle')
+    parser.add_argument('--author', default=None, help='optional cover author')
+    parser.add_argument('--date', default=None, help='optional cover date (YYYY-MM-DD)')
     parser.add_argument('--stage', default='all', choices=STAGES, help='run one pipeline stage')
     parser.add_argument('--min-sources', type=int, default=5, help='minimum sources for validate stage')
     parser.add_argument('--assets', default='assets', help='assets directory relative to report.md')
@@ -68,9 +71,16 @@ def main() -> int:
         pdf_args = [
             '--input', str(report),
             '--output', str(pdf_out),
-            '--title', title,
             '--assets', args.assets,
         ]
+        if args.title:
+            pdf_args.extend(['--title', args.title])
+        if args.subtitle:
+            pdf_args.extend(['--subtitle', args.subtitle])
+        if args.author:
+            pdf_args.extend(['--author', args.author])
+        if args.date:
+            pdf_args.extend(['--date', args.date])
         if args.generate_images:
             pdf_args.append('--generate-images')
         if args.yes:
