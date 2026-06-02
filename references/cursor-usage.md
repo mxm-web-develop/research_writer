@@ -3,33 +3,56 @@
 ## Setup
 
 1. Copy this skill to `.cursor/skills/research_writer/` (project) or `~/.cursor/skills/research_writer/` (global).
-2. Optional: copy `.cursor/rules/research-writer.mdc` into your project `.cursor/rules/`.
+2. Copy `.cursor/rules/research-writer.mdc` into your project `.cursor/rules/` (covers `research-brief.md`, `report.md`, `sources.md`).
 
-## Workflow
+## Research workflow (Agent)
 
-1. Use Cursor Agent to research and write `report.md` + `sources.md` in your project root.
-2. Install dependencies once (from the skill directory):
+**Read `references/intake-and-search.md` first.** Summary:
+
+1. Copy `templates/sample-research-brief.md` → `research-brief.md`
+2. Phase 0: clarify requirement; set **document_type** and **input_mode**
+3. Phase 0.5: **`scan_local.py`** (local/hybrid) and/or **`search_tavily.py`** (web/hybrid; needs `MXM_RESEARCH_APIKEY`)
+4. Phase 1: dimensions from type template
+5. Phase 2: multi-round search; populate `sources.md` during search
+6. Phase 3: reasoning chains, conflicts, gaps
+7. Phase 4: write `report.md` (type-specific sections), then build artifacts
+
+**When to use scripts vs Agent tools:**
+
+| Task | Prefer |
+|------|--------|
+| Local folder index | `scan_local.py` |
+| Web search (key set) | `search_tavily.py` |
+| Web search (no key) | Cursor **WebSearch** + browser |
+| Structure lookup | `references/document-types/{id}.md` |
+| PDF/PPT build | `build_bundle.py` |
+
+Fallbacks: `references/fallbacks.md`
+
+## Build workflow (Scripts)
+
+Install once:
 
 ```bash
 python3 ~/.cursor/skills/research_writer/scripts/bootstrap.py --install
 python3 ~/.cursor/skills/research_writer/scripts/doctor.py
 ```
 
-3. Build deliverables **from your project directory** (use the absolute script path; `doctor.py` prints the exact command):
+After `report.md` is complete, from your project directory:
 
 ```bash
-cd /path/to/your/project
 python3 ~/.cursor/skills/research_writer/scripts/build_bundle.py \
   --input report.md --outdir output --sources sources.md
 ```
 
-If the skill is project-local, replace `~/.cursor/skills/research_writer` with `.cursor/skills/research_writer`.
-
-Cursor handles authoring; scripts handle PDF/PPT compilation.
+Scripts handle PDF/PPT compilation; Agent handles research and authoring.
 
 ## Failure Recovery
 
 ```bash
+python3 ~/.cursor/skills/research_writer/scripts/build_bundle.py \
+  --input report.md --outdir output --stage search --brief research-brief.md
+
 python3 ~/.cursor/skills/research_writer/scripts/build_bundle.py \
   --input report.md --outdir output --stage ppt
 ```

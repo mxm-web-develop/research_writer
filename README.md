@@ -1,8 +1,8 @@
 # research_writer
 
-跨 Agent（Claude Code、Cursor、OpenClaw、Hermes）可复用的深度调研输出 Skill。
+跨 Agent（Claude Code、Cursor、OpenClaw、Hermes）可复用的深度调研输出 Skill **v3.6.0**。
 
-以 `report.md` 为单一事实源，自动派生 `deck-outline.md`、`speaker-notes.md`、`report.pdf`、`report.pptx`，并通过 `validate.py` 做交付前校验。
+支持 **本地资料扫描** 与 **Tavily 网络调研** 双路径；**10 类文档** 结构路由；以 `report.md` 为单一事实源，自动派生 PDF/PPT 等产物。
 
 ## Install
 
@@ -15,11 +15,26 @@ python3 scripts/doctor.py
 
 将本目录复制到项目的 `.cursor/skills/research_writer/` 或全局 `~/.cursor/skills/research_writer/` 即可在 Cursor 中使用。
 
+## Environment (MXM)
+
+进程环境变量优先；也可写入项目根 `image.env` 或 `.research_writer/image.env`：
+
+```bash
+export MXM_RESEARCH_APIKEY="tvly-..."          # Tavily 搜索
+export MXM_GEN_IMAGE_KEY="..."                 # AI 配图
+export MXM_GEN_IMAGE_URL="https://.../v1/images/generations"
+export MXM_GEN_IMAGE_MODEL="gpt-image-2"
+```
+
+无 Tavily key 时 Agent 使用 WebSearch 降级（见 `references/fallbacks.md`）。
+
 ## Usage
 
-1. 复制模板：`templates/sample-report.md` → `report.md`，`templates/sample-sources.md` → `sources.md`
-2. 完成调研写作
-3. 构建产物：
+1. 复制 `templates/sample-research-brief.md` → `research-brief.md`，识别 `document_type` 与 `input_mode`
+2. 本地资料：`python3 scripts/scan_local.py --path ./docs --out local-index.md`
+3. 网络调研：`python3 scripts/search_tavily.py --query "..." --append research-brief.md`
+4. 完成 `report.md`、`sources.md`
+5. 构建产物：
 
 ```bash
 python3 scripts/build_bundle.py --input report.md --outdir output --sources sources.md
@@ -29,7 +44,7 @@ python3 scripts/build_bundle.py --input report.md --outdir output --sources sour
 
 - Python 3.9+
 - Google Chrome 或 Chromium（PDF 导出）
-- `markdown`, `python-pptx`, `lxml`（由 bootstrap 安装）
+- `markdown`, `python-pptx`, `lxml`, `tavily-python`（由 bootstrap 安装）
 
 ## License
 

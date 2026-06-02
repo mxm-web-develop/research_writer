@@ -8,7 +8,28 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from common import run_script, split_sections, write_deck_outline, write_speaker_notes
 
-STAGES = ('all', 'images', 'deck', 'notes', 'pdf', 'ppt', 'validate')
+STAGES = ('all', 'search', 'images', 'deck', 'notes', 'pdf', 'ppt', 'validate')
+
+
+def parse_brief_queries(brief_path: Path) -> list[str]:
+    if not brief_path.exists():
+        return []
+    text = brief_path.read_text(encoding='utf-8')
+    queries: list[str] = []
+    in_table = False
+    for line in text.splitlines():
+        if line.strip().startswith('| Round'):
+            in_table = True
+            continue
+        if in_table:
+            if not line.strip().startswith('|'):
+                break
+            if line.strip().startswith('|-------'):
+                continue
+            cols = [c.strip() for c in line.strip().strip('|').split('|')]
+            if len(cols) >= 3 and cols[2] and cols[2] not in ('Query', ''):
+                queries.append(cols[2])
+    return queries
 
 
 def main() -> int:
@@ -23,7 +44,8 @@ def main() -> int:
     parser.add_argument('--stage', default='all', choices=STAGES, help='run one pipeline stage')
     parser.add_argument('--min-sources', type=int, default=5, help='minimum sources for validate stage')
     parser.add_argument('--assets', default='assets', help='assets directory relative to report.md')
-    parser.add_argument('--generate-images', action='store_true', help='call GPT-image API for pending rw-image directives')
+    parser.add_argument('--brief', default=None, help='path to research-brief.md (default: sibling of report)')
+    parser.add_argument('--query', action='append', default=[], help='search query (with --stage search)')
     parser.add_argument('--yes', action='store_true', help='skip interactive image generation confirmation')
     args = parser.parse_args()
 
@@ -31,6 +53,7 @@ def main() -> int:
     outdir = Path(args.outdir).resolve()
     outdir.mkdir(parents=True, exist_ok=True)
     sources = Path(args.sources).resolve() if args.sources else report.parent / 'sources.md'
+    brief = Path(args.brief).resolve() if args.brief else report.parent / 'research-brief.md'
 
     text = report.read_text(encoding='utf-8')
     parsed_title, sections = split_sections(text)
@@ -45,7 +68,21 @@ def main() -> int:
 
     built: list[Path] = []
 
-    if stage == 'images':
+    if stage == 'search':
+        queries = args.query or parse_brief_queries(brief)
+        if not queries:
+            print('No queries found in brief §3 and none passed via --query', file=sys.stderr)
+            return 1
+        for i, q in enumerate(queries, 1):
+            run_script(
+                base / 'search_tavily.py',
+                [
+                    '--query', q,
+                    '--append', str(brief),
+                    '--round', f'R{i}',
+                ],
+            )
+    elif stage == 'images':
         img_args = ['--input', str(report), '--assets', args.assets]
         if args.yes:
             img_args.append('--yes')
@@ -111,6 +148,7 @@ def main() -> int:
             '--outdir', str(outdir),
             '--min-sources', str(args.min_sources),
             '--assets', args.assets,
+            '--brief', str(brief),
         ]
         run_script(base / 'validate.py', validate_args)
 

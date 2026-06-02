@@ -1,6 +1,8 @@
 ---
-description: Deep research workflow — report.md first, then script-built PDF/PPT deliverables (research_writer skill).
+description: Deep research workflow — document type routing, local/Tavily dual-path intake, reasoning, then report.md and script-built PDF/PPT (research_writer v3.6.0).
 globs:
+  - research-brief.md
+  - local-index.md
   - report.md
   - sources.md
   - output/**
@@ -10,22 +12,41 @@ globs:
 
 When the user needs deep research with formal deliverables:
 
-1. Write `report.md` (standard 8 sections) and `sources.md` (≥5 sources with URL, publisher, access date).
-2. Do not treat PPT or speaker notes as a second fact source.
-3. After markdown is complete, run from the **project directory** (where `report.md` lives). Use the skill's bundled script by absolute path:
+## Before writing report.md
+
+Follow **`references/intake-and-search.md`** in order:
+
+1. **Phase 0 — Intake**: Clarify core question, audience, scope, out-of-scope. Set **`document_type`** (10 types in `references/document-types/`). Ask the user if vague. Write `research-brief.md` §1.
+2. **Phase 0.5 — Input mode**: `local` | `web` | `hybrid`. Run **`scan_local.py`** for local paths; run **`search_tavily.py`** (or WebSearch fallback) for web gaps. Log in §3; update `sources.md`.
+3. **Phase 1 — Dimensions**: Load type template sections; pick 4–6 angles; sub-questions + falsification per dimension. §2.
+4. **Phase 2 — Deep search**: ≥3 rounds (landscape → depth → verify). Tavily script or WebSearch + codebase + browser. ≥2 independent sources per dimension. §3–4.
+5. **Phase 3 — Reasoning**: Claim→evidence→reasoning chains; cross-validate; devil's advocate; gaps in §5–7.
+6. **Phase 4 — Write**: `report.md` (sections per **document_type**) + finalize `sources.md`. Then run build scripts.
+
+**Never** write `report.md` from model memory without search/scan evidence.
+
+Template: `templates/sample-research-brief.md`  
+Fallbacks: `references/fallbacks.md`
+
+## Build (after report is done)
+
+Run from the **project directory**. Use the skill's bundled script by absolute path:
 
 ```bash
 python3 ~/.cursor/skills/research_writer/scripts/build_bundle.py --input report.md --outdir output --sources sources.md
 ```
 
-(Project-local skill: `.cursor/skills/research_writer/scripts/build_bundle.py`. Run `doctor.py` to print the resolved path.)
+Optional search batch (needs `MXM_RESEARCH_APIKEY`):
 
-4. If a stage fails, rerun only that stage: `--stage images|deck|notes|pdf|ppt|validate`.
-5. **配图请求**（用户要为话题/项目生成插图时）：
-   - 先问 GPT-image-2 的 **API URL + Key**（若无 `image.env`）
-   - 分析 report/项目，**回复配图建议表**（位置、类型、prompt 草案、优先级）
-   - **等用户确认**后再写 `rw-image` directive 并运行 `--stage images`
-   - 详见 `references/images.md`
-6. Do not declare completion until `validate` passes.
+```bash
+python3 ~/.cursor/skills/research_writer/scripts/build_bundle.py \
+  --input report.md --outdir output --stage search --brief research-brief.md
+```
 
-Read `SKILL.md` and `references/research-methodology.md` for quality gates.
+If a stage fails, rerun only that stage: `--stage search|images|deck|notes|pdf|ppt|validate`.
+
+**配图请求**：见 `references/images.md`（先问 API → 建议 → 用户确认 → 生成）
+
+Do not declare completion until `validate` passes.
+
+Read `SKILL.md`, `references/intake-and-search.md`, and `references/research-methodology.md`.
