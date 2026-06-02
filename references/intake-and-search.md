@@ -6,6 +6,34 @@ Cursor agents: use **`search_tavily.py`** when `MXM_RESEARCH_APIKEY` is set; oth
 
 ---
 
+## Preflight — Environment Check（首次 / 新会话必做）
+
+**Before Phase 0**, run:
+
+```bash
+python3 scripts/check_env.py --project-dir . --input-mode web
+```
+
+Add `--needs-images` if the user wants AI-generated illustrations.
+
+| Missing | Required when | Agent action |
+|---------|---------------|--------------|
+| `MXM_RESEARCH_APIKEY` | `input_mode` = web or hybrid | **Stop**; show export guide from `references/env-setup.md`; wait for user |
+| `MXM_GEN_IMAGE_*` | user asked for AI images | **Stop**; show export guide; or user opts for local-only images |
+
+If onboarding is printed:
+
+1. Present the `export` commands (do not invent keys)
+2. Wait for **「已配置」** or explicit fallback choice
+3. Re-run `check_env.py` to verify
+4. Then proceed to Phase 0
+
+`local`-only tasks skip Tavily requirement.
+
+See **`references/env-setup.md`** for full template.
+
+---
+
 ## Phase 0 — Requirement Intake（需求澄清）
 
 Extract or confirm with the user when ambiguous:

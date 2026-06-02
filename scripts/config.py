@@ -123,3 +123,115 @@ def export_setup_hint() -> str:
         'export MXM_GEN_IMAGE_URL="https://your-gateway/v1/images/generations"\n'
         'export MXM_GEN_IMAGE_MODEL="gpt-image-2"'
     )
+
+
+@dataclass
+class EnvStatus:
+    research_ready: bool
+    image_ready: bool
+    research_source: str = ''
+    image_source: str = ''
+
+    @property
+    def all_ready(self) -> bool:
+        return self.research_ready and self.image_ready
+
+    @property
+    def missing_research(self) -> bool:
+        return not self.research_ready
+
+    @property
+    def missing_image(self) -> bool:
+        return not self.image_ready
+
+
+def _detect_source(env_key: str, file_vals: dict[str, str], *legacy_keys: str) -> str:
+    if os.environ.get(env_key):
+        return 'process env'
+    lowered = env_key.lower()
+    if file_vals.get(lowered):
+        return 'image.env'
+    for lk in legacy_keys:
+        if os.environ.get(lk):
+            return f'legacy ({lk})'
+    return ''
+
+
+def check_env_status(project_dir: Path | None = None) -> EnvStatus:
+    file_vals = _load_env_files(project_dir)
+    research = load_research_config(project_dir)
+    image = load_image_config(project_dir)
+    research_source = _detect_source(MXM_RESEARCH_APIKEY, file_vals, *_LEGACY_RESEARCH)
+    image_source = ''
+    if image.ready:
+        if os.environ.get(MXM_GEN_IMAGE_KEY) or os.environ.get(MXM_GEN_IMAGE_URL):
+            image_source = 'process env'
+        elif file_vals.get('mxm_gen_image_key') or file_vals.get('mxm_gen_image_url'):
+            image_source = 'image.env'
+        else:
+            image_source = 'legacy RW_IMAGE_*'
+    return EnvStatus(
+        research_ready=research.ready,
+        image_ready=image.ready,
+        research_source=research_source,
+        image_source=image_source,
+    )
+
+
+def format_first_run_onboarding(
+    status: EnvStatus,
+    *,
+    input_mode: str = 'web',
+    needs_images: bool = False,
+) -> str:
+    """User-facing onboarding when env vars are missing (Agent shows this on first call)."""
+    lines: list[str] = []
+    need_research = status.missing_research and input_mode in ('web', 'hybrid')
+    need_image = status.missing_image and needs_images
+
+    if not need_research and not need_image:
+        return ''
+
+    lines.append('## research_writer 环境配置（首次使用）')
+    lines.append('')
+    lines.append('检测到尚未配置以下 API 凭证。请先配置后再继续（或选择降级方案）。')
+    lines.append('')
+
+    if need_research:
+        lines.append('### 1. 网络调研 — `MXM_RESEARCH_APIKEY`（Tavily）')
+        lines.append('')
+        lines.append('用于 `search_tavily.py` 自动搜索。请在终端执行（建议写入 `~/.zshrc` 后 `source ~/.zshrc`）：')
+        lines.append('')
+        lines.append('```bash')
+        lines.append('export MXM_RESEARCH_APIKEY="tvly-你的密钥"')
+        lines.append('```')
+        lines.append('')
+        lines.append('或复制 `templates/image.env.example` → 项目根 `image.env`，填入同名变量。')
+        lines.append('')
+        lines.append('**暂不配置？** 可改用 Cursor WebSearch 降级，但请在 brief §3 标注来源 tier。')
+        lines.append('')
+
+    if need_image:
+        lines.append('### 2. AI 配图 — `MXM_GEN_IMAGE_*`')
+        lines.append('')
+        lines.append('用于 GPT-image-2 自动生成插图。请在终端执行：')
+        lines.append('')
+        lines.append('```bash')
+        lines.append('export MXM_GEN_IMAGE_KEY="你的生图密钥"')
+        lines.append('export MXM_GEN_IMAGE_URL="https://你的网关/v1/images/generations"')
+        lines.append('export MXM_GEN_IMAGE_MODEL="gpt-image-2"')
+        lines.append('```')
+        lines.append('')
+        lines.append('**暂不配置？** 可仅使用本地图片，跳过 AI 生图。')
+        lines.append('')
+
+    if need_research and need_image:
+        lines.append('### 一次性配置全部变量')
+        lines.append('')
+        lines.append('```bash')
+        lines.append(export_setup_hint())
+        lines.append('```')
+        lines.append('')
+
+    lines.append('配置完成后请回复 **「已配置」**，Agent 将运行 `python3 scripts/check_env.py` 验证并继续。')
+    return '\n'.join(lines)

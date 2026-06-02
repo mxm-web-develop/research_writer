@@ -12,6 +12,23 @@ globs:
 
 When the user needs deep research with formal deliverables:
 
+## First invocation — check environment
+
+**Before anything else**, run from the project directory:
+
+```bash
+python3 ~/.cursor/skills/research_writer/scripts/check_env.py \
+  --project-dir . --input-mode web
+```
+
+Use `--input-mode local` if only scanning local files. Add `--needs-images` if user wants AI illustrations.
+
+If the script prints **「环境配置（首次使用）」**:
+
+1. Show the user the `export MXM_*` commands (see `references/env-setup.md`)
+2. **Do not** start research until they reply **「已配置」** or choose fallback (WebSearch / local images only)
+3. Re-run `check_env.py` to verify, then continue below
+
 ## Before writing report.md
 
 Follow **`references/intake-and-search.md`** in order:

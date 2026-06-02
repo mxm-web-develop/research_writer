@@ -7,6 +7,15 @@
 
 ## Research workflow (Agent)
 
+**On first call**, run env check before intake:
+
+```bash
+python3 ~/.cursor/skills/research_writer/scripts/check_env.py \
+  --project-dir . --input-mode web --needs-images
+```
+
+If keys are missing, guide the user per `references/env-setup.md` and wait for confirmation.
+
 **Read `references/intake-and-search.md` first.** Summary:
 
 1. Copy `templates/sample-research-brief.md` → `research-brief.md`

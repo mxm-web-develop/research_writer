@@ -47,6 +47,7 @@ metadata:
 
 | Phase | 动作 | 产出 |
 |-------|------|------|
+| **Preflight 环境** | 跑 `check_env.py`；缺 MXM 变量则引导用户 `export` 或写 `image.env` | 用户确认「已配置」或选降级 |
 | **0 需求澄清** | 提炼核心问题、读者、范围、排除项；识别 **document_type**；模糊则先问用户 | `research-brief.md` §1 |
 | **0.5 输入模式** | `local`（本地路径）/ `web`（仅话题）/ `hybrid`（两者） | §1 `input_mode` + `scan_local.py` 和/或 `search_tavily.py` |
 | **1 多维框架** | 从类型模板加载章节与维度；每维 2–3 个子问题 + 反证条件 | `research-brief.md` §2 |
@@ -71,7 +72,24 @@ python3 scripts/build_bundle.py --input report.md --outdir output --stage search
 
 **Fallback**：见 `references/fallbacks.md`（Tavily → Agent WebSearch → 浏览器 → 仅本地）
 
-**禁止**：跳过搜索直接用模型知识写 report；单来源关键结论；只搜一轮。
+## First Run — Environment（首次调用必做）
+
+Agent **在开始 Phase 0 之前**必须先检查 MXM 环境变量；缺失时 **暂停任务**，引导用户配置后再继续。
+
+1. 推断 `input_mode`（local / web / hybrid）及是否需要 AI 配图
+2. 运行：
+
+```bash
+python3 scripts/check_env.py --project-dir . --input-mode web
+# 若要 AI 配图：加 --needs-images
+```
+
+3. 若输出「环境配置（首次使用）」引导 → **展示 export 命令，等待用户回复「已配置」或选择降级**
+4. 用户确认后重跑 `check_env.py`，再进入 Phase 0
+
+完整规范：`references/env-setup.md`
+
+**禁止**：在缺 key 且用户未确认降级时 silently 跳过 Tavily/生图说明。
 
 模板：`templates/sample-research-brief.md`
 
@@ -144,9 +162,9 @@ python3 scripts/build_bundle.py --input report.md --outdir output --sources sour
 
 ## Bundled Files
 
-**Scripts:** `bootstrap.py`, `doctor.py`, `config.py`, `doc_types.py`, `build_bundle.py`, `search_tavily.py`, `scan_local.py`, `generate_images.py`, `generate_pdf.py`, `generate_ppt.py`, `validate.py`, `common.py`, `images.py`
+**References:** `env-setup.md`, `intake-and-search.md`, `fallbacks.md`, `document-types/`, `research-methodology.md`, `sources-format.md`, `images.md`, `pdf-output.md`, `installation.md`, `troubleshooting.md`, agent usage docs
 
-**References:** `intake-and-search.md`, `fallbacks.md`, `document-types/`, `research-methodology.md`, `sources-format.md`, `images.md`, `pdf-output.md`, `installation.md`, `troubleshooting.md`, agent usage docs
+**Scripts:** `bootstrap.py`, `doctor.py`, `check_env.py`, `config.py`, `doc_types.py`, `build_bundle.py`, `search_tavily.py`, `scan_local.py`, `generate_images.py`, `generate_pdf.py`, `generate_ppt.py`, `validate.py`, `common.py`, `images.py`
 
 **Templates:** `sample-research-brief.md`, `sample-report.md`, `sample-sources.md`, `requirements.txt`, `image.env.example`
 
@@ -216,7 +234,7 @@ python3 scripts/build_bundle.py --input report.md --outdir output --sources sour
 
 One-shot with approval already given: add `--yes`.
 
-**PDF 封面**：独占一整页 A4；四级字体（大标题 / 副标题 / 作者 / 日期）。可从 report 首行 `# 标题（副标题）`、YAML frontmatter 或 `<!-- rw-cover ... -->` 解析，详见 `references/pdf-output.md`。
+**PDF 封面**：独占一整页 A4；按 **`document_type`** 自动套用 10 套配色与版式（徽章 + 渐变 + classic/editorial/bold/minimal 布局）；四级字体（大标题 / 副标题 / 作者 / 日期）。详见 `references/pdf-output.md`。
 
 ## Portability
 

@@ -2,6 +2,21 @@
 
 When MXM API keys are missing or calls fail, use this order.
 
+## First run (Agent must guide)
+
+On **first invocation** or when keys are missing, run `scripts/check_env.py` and follow `references/env-setup.md`:
+
+1. Print onboarding with `export` commands — **do not proceed** until user confirms or chooses fallback
+2. `MXM_RESEARCH_APIKEY` missing + web/hybrid → offer WebSearch fallback
+3. `MXM_GEN_IMAGE_*` missing + user wants AI images → offer local-only images
+
+```bash
+export MXM_RESEARCH_APIKEY="tvly-..."
+export MXM_GEN_IMAGE_KEY="..."
+export MXM_GEN_IMAGE_URL="https://.../v1/images/generations"
+export MXM_GEN_IMAGE_MODEL="gpt-image-2"
+```
+
 ## Search
 
 | Priority | Method | When |

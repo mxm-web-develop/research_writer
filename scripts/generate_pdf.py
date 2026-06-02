@@ -16,6 +16,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from common import find_chrome
+from doc_types import DEFAULT_DOC_TYPE, CoverTheme, get_cover_theme, resolve_document_type
 from images import ImageConfig, embed_images_in_html, load_image_config, materialize_images
 
 HEADING_RE = re.compile(
@@ -36,9 +37,11 @@ class CoverMeta:
     subtitle: str = ''
     author: str = 'MxM研究部'
     date: str = ''
+    document_type: str = 'research-report'
+    type_label: str = '调研报告'
 
 
-CSS = '''
+BASE_CSS = '''
 @page { size: A4; margin: 0; }
 html, body { margin: 0; padding: 0; width: 210mm; }
 body { font-family: "PingFang SC", "Microsoft YaHei", sans-serif; font-size: 10.5pt; color:#1a1a1a; }
@@ -50,8 +53,6 @@ body { font-family: "PingFang SC", "Microsoft YaHei", sans-serif; font-size: 10.
   max-height: 297mm;
   margin: 0;
   padding: 0;
-  background: linear-gradient(150deg,#051C2C 0%,#0d3a5c 50%,#1a6b8a 100%);
-  color: white;
   page-break-after: always;
   break-after: page;
   page-break-inside: avoid;
@@ -68,6 +69,19 @@ body { font-family: "PingFang SC", "Microsoft YaHei", sans-serif; font-size: 10.
   flex-direction: column;
   justify-content: center;
   gap: 0;
+  position: relative;
+  z-index: 1;
+}
+.cover-badge {
+  display: inline-block;
+  align-self: flex-start;
+  margin: 0 0 8mm;
+  padding: 2mm 5mm;
+  border-radius: 1.5mm;
+  font-size: 10pt;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
 }
 .cover-title {
   margin: 0 0 6mm;
@@ -77,7 +91,6 @@ body { font-family: "PingFang SC", "Microsoft YaHei", sans-serif; font-size: 10.
   font-weight: 700;
   line-height: 1.25;
   letter-spacing: 0.02em;
-  color: white;
 }
 .cover-subtitle {
   margin: 0 0 18mm;
@@ -85,38 +98,52 @@ body { font-family: "PingFang SC", "Microsoft YaHei", sans-serif; font-size: 10.
   font-size: 16pt;
   font-weight: 400;
   line-height: 1.45;
-  color: rgba(255,255,255,0.92);
 }
 .cover-meta {
   margin-top: auto;
   padding-top: 10mm;
-  border-top: 0.4pt solid rgba(255,255,255,0.35);
 }
 .cover-author {
   margin: 0 0 3mm;
   font-size: 12pt;
   font-weight: 500;
   line-height: 1.5;
-  color: rgba(255,255,255,0.95);
 }
 .cover-date {
   margin: 0;
   font-size: 11pt;
   font-weight: 400;
   line-height: 1.5;
-  color: rgba(255,255,255,0.82);
 }
+.page-cover.layout-classic .cover-inner { justify-content: center; text-align: left; }
+.page-cover.layout-classic .cover-meta { border-top: 0.4pt solid var(--cover-meta-border); }
+.page-cover.layout-editorial .cover-inner { justify-content: flex-end; padding-bottom: 36mm; }
+.page-cover.layout-editorial .cover-badge { position: absolute; top: 28mm; left: 32mm; margin: 0; }
+.page-cover.layout-editorial .cover-meta { border-top: 0.4pt solid var(--cover-meta-border); }
+.page-cover.layout-bold .cover-inner { justify-content: center; padding-left: 38mm; border-left: 5pt solid var(--cover-accent); }
+.page-cover.layout-bold .cover-title { font-size: 32pt; }
+.page-cover.layout-bold .cover-meta { border-top: none; padding-top: 12mm; }
+.page-cover.layout-minimal .cover-inner { justify-content: center; padding-top: 52mm; }
+.page-cover.layout-minimal::before {
+  content: "";
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 8mm;
+  background: var(--cover-accent);
+}
+.page-cover.layout-minimal .cover-badge { border: 0.5pt solid var(--cover-badge-text); background: transparent; }
+.page-cover.layout-minimal .cover-meta { border-top: 0.4pt solid var(--cover-meta-border); }
 .page-toc { width:210mm; min-height:297mm; padding:18mm 28mm; page-break-after:always; break-after:page; box-sizing:border-box; }
 .page-body { width:210mm; padding:14mm 28mm; box-sizing:border-box; }
 .page-refs { width:210mm; padding:14mm 28mm; page-break-before:always; break-before:page; box-sizing:border-box; }
-h1 { font-size:14pt; color:#00355F; border-left:3.5pt solid #006BAC; padding-left:4mm; }
-h2 { font-size:11.5pt; color:#051C2C; }
+h1 { font-size:14pt; color:var(--body-h1-color,#00355F); border-left:3.5pt solid var(--body-accent,#006BAC); padding-left:4mm; }
+h2 { font-size:11.5pt; color:var(--body-h2-color,#051C2C); }
 h3 { font-size:10.5pt; color:#333; }
 p, li { line-height:1.7; }
-pre { background:#f4f6f9; border-left:3pt solid #006BAC; padding:4mm; overflow-x:auto; }
+pre { background:#f4f6f9; border-left:3pt solid var(--body-accent,#006BAC); padding:4mm; overflow-x:auto; }
 table { width:100%; border-collapse:collapse; margin:4mm 0; font-size:9.5pt; }
 th, td { border:0.3pt solid #d0d8e0; padding:2mm 3mm; }
-thead tr { background:#051C2C; color:white; }
+thead tr { background:var(--body-thead-bg,#051C2C); color:white; }
 .toc-item { display:flex; gap:3mm; margin-bottom:2.5mm; align-items:baseline; }
 .toc-item .dots { flex:1; border-bottom:1pt dotted #aaa; margin-bottom:2mm; }
 .toc-item a { color:inherit; text-decoration:none; }
@@ -126,6 +153,39 @@ figure.rw-figure img { max-width: 100%; height: auto; display: block; margin: 0 
 figure.rw-figure figcaption { font-size: 9pt; color: #555; margin-top: 2mm; }
 p img { max-width: 100%; height: auto; display: block; margin: 4mm auto; }
 '''
+
+
+def build_theme_css(theme: CoverTheme) -> str:
+    h2_color = theme.accent if theme.layout in ('bold', 'minimal') else '#051C2C'
+    thead_bg = theme.accent if theme.id in ('press-release', 'competitive-analysis', 'social-narrative') else '#051C2C'
+    return f'''
+:root {{
+  --cover-accent: {theme.accent};
+  --cover-meta-border: {theme.meta_border};
+  --cover-badge-bg: {theme.badge_bg};
+  --cover-badge-text: {theme.badge_text};
+  --body-accent: {theme.accent};
+  --body-h1-color: {theme.accent if theme.layout == 'minimal' else '#00355F'};
+  --body-h2-color: {h2_color};
+  --body-thead-bg: {thead_bg};
+}}
+.page-cover.cover--{theme.id} {{
+  background: {theme.background};
+  color: {theme.text_color};
+}}
+.page-cover.cover--{theme.id} .cover-title {{ color: {theme.text_color}; }}
+.page-cover.cover--{theme.id} .cover-subtitle {{ color: {theme.subtitle_color}; }}
+.page-cover.cover--{theme.id} .cover-author {{ color: {theme.text_color}; opacity: 0.95; }}
+.page-cover.cover--{theme.id} .cover-date {{ color: {theme.subtitle_color}; }}
+.page-cover.cover--{theme.id} .cover-badge {{
+  background: {theme.badge_bg};
+  color: {theme.badge_text};
+}}
+'''
+
+
+def build_css(theme: CoverTheme) -> str:
+    return BASE_CSS + build_theme_css(theme)
 
 
 def normalize_text(text: str) -> str:
@@ -191,6 +251,8 @@ def parse_cover_meta(
     subtitle: str | None = None,
     author: str | None = None,
     report_date: str | None = None,
+    document_type: str | None = None,
+    type_label: str | None = None,
 ) -> CoverMeta:
     fields: dict[str, str] = {}
 
@@ -223,22 +285,29 @@ def parse_cover_meta(
 
     resolved_author = author or fields.get('author') or 'MxM研究部'
     resolved_date = report_date or fields.get('date') or date.today().isoformat()
+    resolved_type = document_type or fields.get('document_type') or DEFAULT_DOC_TYPE
+    theme = get_cover_theme(resolved_type)
+    resolved_label = type_label or fields.get('type_label') or theme.badge
 
     return CoverMeta(
         title=resolved_title,
         subtitle=resolved_subtitle,
         author=resolved_author,
         date=resolved_date,
+        document_type=theme.id,
+        type_label=resolved_label,
     )
 
 
-def build_cover_html(cover: CoverMeta) -> str:
+def build_cover_html(cover: CoverMeta, theme: CoverTheme) -> str:
     subtitle_block = (
         f'<p class="cover-subtitle">{html.escape(cover.subtitle)}</p>' if cover.subtitle else ''
     )
+    badge = f'<span class="cover-badge">{html.escape(cover.type_label)}</span>'
     return (
-        '<div class="page-cover">'
+        f'<div class="page-cover cover--{theme.id} layout-{theme.layout}">'
         '<div class="cover-inner">'
+        f'{badge}'
         f'<h1 class="cover-title">{html.escape(cover.title)}</h1>'
         f'{subtitle_block}'
         '<div class="cover-meta">'
@@ -297,6 +366,7 @@ def build_toc_html(headings: list[dict], page_map: dict[str, int | None]) -> str
 
 def assemble_html(
     cover: CoverMeta,
+    theme: CoverTheme,
     body_html: str,
     refs_html: str,
     toc_html: str,
@@ -312,9 +382,10 @@ def assemble_html(
     refs_block = (
         f'<div class="page-refs">{refs_html}</div>' if include_refs and refs_html else ''
     )
-    cover_block = build_cover_html(cover)
+    cover_block = build_cover_html(cover, theme)
+    css = build_css(theme)
     return f'''<!DOCTYPE html>
-<html lang="zh-CN"><head><meta charset="UTF-8"><style>{CSS}</style></head><body>
+<html lang="zh-CN"><head><meta charset="UTF-8"><style>{css}</style></head><body>
 {cover_block}
 {toc_block}
 {body_block}
@@ -322,7 +393,7 @@ def assemble_html(
 </body></html>'''
 
 
-def measure_toc_pages(chrome: Path, cover: CoverMeta, toc_html: str) -> int:
+def measure_toc_pages(chrome: Path, cover: CoverMeta, theme: CoverTheme, toc_html: str) -> int:
     with tempfile.TemporaryDirectory(prefix='rw-toc-') as tmp:
         tmp_dir = Path(tmp)
         probe_html = tmp_dir / 'toc-probe.html'
@@ -330,6 +401,7 @@ def measure_toc_pages(chrome: Path, cover: CoverMeta, toc_html: str) -> int:
         probe_html.write_text(
             assemble_html(
                 cover,
+                theme,
                 '',
                 '',
                 toc_html,
@@ -398,6 +470,7 @@ def map_headings_to_pages(pdf_path: Path, headings: list[dict]) -> dict[str, int
 def resolve_toc_page_numbers(
     chrome: Path,
     cover: CoverMeta,
+    theme: CoverTheme,
     body_html: str,
     refs_html: str,
     headings: list[dict],
@@ -410,7 +483,7 @@ def resolve_toc_page_numbers(
         pass1_html = tmp_dir / 'pass1.html'
         pass1_pdf = tmp_dir / 'pass1.pdf'
         pass1_html.write_text(
-            assemble_html(cover, body_html, refs_html, '', include_toc=False),
+            assemble_html(cover, theme, body_html, refs_html, '', include_toc=False),
             encoding='utf-8',
         )
         chrome_html_to_pdf(chrome, pass1_html, pass1_pdf)
@@ -423,7 +496,7 @@ def resolve_toc_page_numbers(
                 item['id']: pass1_pages.get(item['id'], 2) + toc_pages for item in headings
             }
             toc_html = build_toc_html(headings, tentative)
-            measured = measure_toc_pages(chrome, cover, toc_html)
+            measured = measure_toc_pages(chrome, cover, theme, toc_html)
             resolved = tentative.copy()
             if measured == toc_pages:
                 break
@@ -435,6 +508,7 @@ def resolve_toc_page_numbers(
 def md_to_html(
     md_text: str,
     cover: CoverMeta,
+    theme: CoverTheme,
     report_dir: Path,
     chrome: Path | None = None,
     *,
@@ -458,12 +532,12 @@ def md_to_html(
     headings = extract_headings(body_html)
 
     if chrome and headings:
-        page_map = resolve_toc_page_numbers(chrome, cover, body_html, refs_html, headings)
+        page_map = resolve_toc_page_numbers(chrome, cover, theme, body_html, refs_html, headings)
     else:
         page_map = {h['id']: None for h in headings}
 
     toc_html = build_toc_html(headings, page_map)
-    return assemble_html(cover, body_html, refs_html, toc_html, include_toc=True)
+    return assemble_html(cover, theme, body_html, refs_html, toc_html, include_toc=True)
 
 
 def main() -> int:
@@ -492,17 +566,23 @@ def main() -> int:
     report_dir = md_path.parent
     image_config = load_image_config(report_dir, Path(args.assets))
     md_text = md_path.read_text(encoding='utf-8')
+    brief_path = report_dir / 'research-brief.md'
+    doc_spec = resolve_document_type(md_path, brief_path if brief_path.exists() else None)
+    theme = get_cover_theme(doc_spec.id)
     cover = parse_cover_meta(
         md_text,
         title=args.title,
         subtitle=args.subtitle,
         author=args.author,
         report_date=args.date,
+        document_type=doc_spec.id,
+        type_label=doc_spec.label,
     )
     try:
         html_doc = md_to_html(
             md_text,
             cover,
+            theme,
             report_dir,
             chrome=chrome,
             image_config=image_config,
@@ -514,7 +594,7 @@ def main() -> int:
         return 1
     html_path.write_text(html_doc, encoding='utf-8')
     chrome_html_to_pdf(chrome, html_path, pdf_path)
-    print(f'PDF generated: {pdf_path}')
+    print(f'PDF generated: {pdf_path} (cover: {theme.badge})')
     return 0
 
 

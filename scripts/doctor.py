@@ -51,7 +51,7 @@ def main() -> int:
 
     if not research.ready or not image.ready:
         print()
-        print('Setup hint:')
+        print('Setup hint (or run: python3 scripts/check_env.py):')
         print(export_setup_hint())
 
     root = skill_root()

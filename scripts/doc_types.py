@@ -12,6 +12,101 @@ BRIEF_TYPE_ALT = re.compile(r'^document_type:\s*(.+)$', re.MULTILINE | re.IGNORE
 
 
 @dataclass(frozen=True)
+class CoverTheme:
+    """PDF cover visual theme per document type."""
+    id: str
+    badge: str
+    background: str
+    accent: str
+    text_color: str = '#ffffff'
+    subtitle_color: str = 'rgba(255,255,255,0.92)'
+    meta_border: str = 'rgba(255,255,255,0.35)'
+    badge_bg: str = 'rgba(255,255,255,0.18)'
+    badge_text: str = '#ffffff'
+    layout: str = 'classic'  # classic | editorial | bold | minimal
+
+
+COVER_THEMES: dict[str, CoverTheme] = {
+    'research-report': CoverTheme(
+        'research-report',
+        '调研报告',
+        'linear-gradient(150deg,#051C2C 0%,#0d3a5c 50%,#1a6b8a 100%)',
+        '#006BAC',
+        layout='classic',
+    ),
+    'product-manual': CoverTheme(
+        'product-manual',
+        '产品说明书',
+        'linear-gradient(145deg,#0c4a6e 0%,#0891b2 55%,#22d3ee 100%)',
+        '#06b6d4',
+        badge_bg='rgba(255,255,255,0.22)',
+        layout='editorial',
+    ),
+    'tech-proposal': CoverTheme(
+        'tech-proposal',
+        '技术方案',
+        'linear-gradient(160deg,#1e293b 0%,#334155 45%,#0f766e 100%)',
+        '#14b8a6',
+        layout='bold',
+    ),
+    'prd': CoverTheme(
+        'prd',
+        'PRD',
+        'linear-gradient(150deg,#312e81 0%,#4338ca 50%,#6366f1 100%)',
+        '#818cf8',
+        layout='editorial',
+    ),
+    'whitepaper': CoverTheme(
+        'whitepaper',
+        '白皮书',
+        'linear-gradient(155deg,#0f172a 0%,#1e3a5f 60%,#334155 100%)',
+        '#d4af37',
+        badge_bg='rgba(212,175,55,0.22)',
+        badge_text='#fef3c7',
+        meta_border='rgba(212,175,55,0.45)',
+        layout='classic',
+    ),
+    'competitive-analysis': CoverTheme(
+        'competitive-analysis',
+        '竞品分析',
+        'linear-gradient(150deg,#450a0a 0%,#991b1b 50%,#dc2626 100%)',
+        '#f87171',
+        layout='bold',
+    ),
+    'tech-tutorial': CoverTheme(
+        'tech-tutorial',
+        '技术教程',
+        'linear-gradient(150deg,#064e3b 0%,#047857 50%,#10b981 100%)',
+        '#34d399',
+        badge_bg='rgba(0,0,0,0.25)',
+        layout='minimal',
+    ),
+    'press-release': CoverTheme(
+        'press-release',
+        '新闻稿',
+        'linear-gradient(180deg,#18181b 0%,#27272a 40%,#991b1b 100%)',
+        '#ef4444',
+        layout='bold',
+    ),
+    'spoken-script': CoverTheme(
+        'spoken-script',
+        '口播稿',
+        'linear-gradient(145deg,#7c2d12 0%,#c2410c 50%,#fb923c 100%)',
+        '#fdba74',
+        layout='editorial',
+    ),
+    'social-narrative': CoverTheme(
+        'social-narrative',
+        '自媒体叙事',
+        'linear-gradient(135deg,#581c87 0%,#9333ea 45%,#ec4899 100%)',
+        '#f9a8d4',
+        badge_bg='rgba(255,255,255,0.25)',
+        layout='minimal',
+    ),
+}
+
+
+@dataclass(frozen=True)
 class DocTypeSpec:
     id: str
     label: str
@@ -156,6 +251,12 @@ DEFAULT_DOC_TYPE = 'research-report'
 
 def skill_doc_types_dir() -> Path:
     return Path(__file__).resolve().parent.parent / 'references' / 'document-types'
+
+
+def get_cover_theme(type_id: str | None) -> CoverTheme:
+    if type_id and type_id in COVER_THEMES:
+        return COVER_THEMES[type_id]
+    return COVER_THEMES[DEFAULT_DOC_TYPE]
 
 
 def get_doc_type(type_id: str | None) -> DocTypeSpec:

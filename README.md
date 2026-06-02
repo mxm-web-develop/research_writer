@@ -28,6 +28,19 @@ export MXM_GEN_IMAGE_MODEL="gpt-image-2"
 
 无 Tavily key 时 Agent 使用 WebSearch 降级（见 `references/fallbacks.md`）。
 
+## 首次调用
+
+Agent 会先运行 `check_env.py`。若缺变量，会引导你配置：
+
+```bash
+export MXM_RESEARCH_APIKEY="tvly-..."
+export MXM_GEN_IMAGE_KEY="..."
+export MXM_GEN_IMAGE_URL="https://.../v1/images/generations"
+export MXM_GEN_IMAGE_MODEL="gpt-image-2"
+```
+
+也可写入项目根 `image.env`（见 `templates/image.env.example`）。配置后回复「已配置」即可继续。详见 `references/env-setup.md`。
+
 ## Usage
 
 1. 复制 `templates/sample-research-brief.md` → `research-brief.md`，识别 `document_type` 与 `input_mode`
