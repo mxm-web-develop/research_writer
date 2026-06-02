@@ -166,8 +166,25 @@ def generate_image_file(config: ImageConfig, spec: ImageSpec, out_path: Path) ->
         'size': spec.size or config.size,
         'n': 1,
     }
-    resp = requests.post(config.api_url, headers=headers, json=payload, timeout=180)
-    resp.raise_for_status()
+    try:
+        resp = requests.post(config.api_url, headers=headers, json=payload, timeout=180)
+        resp.raise_for_status()
+    except requests.HTTPError as exc:
+        status = exc.response.status_code if exc.response is not None else '?'
+        hint = ''
+        if status == 404:
+            hint = (
+                f' Check MXM_GEN_IMAGE_URL ends with /v1/images/generations '
+                f'(current: {config.api_url})'
+            )
+        elif status in (502, 503, 504):
+            hint = ' Gateway unavailable — retry later or build PDF without --generate-images.'
+        raise RuntimeError(
+            f'Image API HTTP {status} for [{spec.id}] at {config.api_url}.{hint}'
+        ) from exc
+    except requests.RequestException as exc:
+        raise RuntimeError(f'Image API request failed for [{spec.id}]: {exc}') from exc
+
     data = resp.json()
     items = data.get('data') or []
     if not items:
@@ -191,6 +208,7 @@ def materialize_images(
     *,
     generate: bool = False,
     yes: bool = False,
+    skip_failed: bool = False,
 ) -> tuple[str, list[str]]:
     report_dir = report_dir.resolve()
     assets_dir = (report_dir / config.assets_dir).resolve()
@@ -213,8 +231,14 @@ def materialize_images(
         else:
             for spec in to_generate:
                 out_path = spec.output_path(assets_dir)
-                generate_image_file(config, spec, out_path)
-                messages.append(f'generated: {out_path}')
+                try:
+                    generate_image_file(config, spec, out_path)
+                    messages.append(f'generated: {out_path}')
+                except RuntimeError as exc:
+                    if skip_failed:
+                        messages.append(f'skipped [{spec.id}]: {exc}')
+                        continue
+                    raise
 
     resolved = md_text
     for spec in specs:

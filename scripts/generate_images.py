@@ -18,6 +18,7 @@ def main() -> int:
     parser.add_argument('--api-key', default=None, help='override RW_IMAGE_API_KEY')
     parser.add_argument('--model', default=None, help='override RW_IMAGE_MODEL (default: gpt-image-2)')
     parser.add_argument('--yes', action='store_true', help='skip interactive confirmation')
+    parser.add_argument('--skip-failed', action='store_true', help='continue when API returns 4xx/5xx (log and skip)')
     parser.add_argument('--dry-run', action='store_true', help='list pending images only')
     args = parser.parse_args()
 
@@ -52,6 +53,7 @@ def main() -> int:
             config,
             generate=True,
             yes=args.yes,
+            skip_failed=args.skip_failed,
         )
     except (RuntimeError, FileNotFoundError, ValueError) as exc:
         print(str(exc), file=sys.stderr)

@@ -8,7 +8,13 @@ import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from config import check_env_status, export_setup_hint, format_first_run_onboarding
+from config import (
+    check_env_status,
+    export_setup_hint,
+    format_first_run_onboarding,
+    load_image_config,
+    validate_image_api_url,
+)
 
 
 def main() -> int:
@@ -57,7 +63,11 @@ def main() -> int:
         else:
             print('  MXM_RESEARCH_APIKEY: MISSING')
         if status.image_ready:
+            img = load_image_config(project_dir)
             print(f'  MXM_GEN_IMAGE_*: OK ({status.image_source or "configured"})')
+            print(f'    URL: {img.api_url}')
+            for w in validate_image_api_url(img.api_url):
+                print(f'    note: {w}')
         else:
             print('  MXM_GEN_IMAGE_*: MISSING')
 

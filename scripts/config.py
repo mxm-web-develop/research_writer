@@ -46,6 +46,39 @@ def _first(*candidates: str) -> str:
     return ''
 
 
+IMAGE_API_PATH_SUFFIX = '/v1/images/generations'
+
+
+def normalize_image_api_url(url: str) -> str:
+    """Ensure OpenAI-compatible images endpoint path (fixes common 404 from bare gateway host)."""
+    url = url.strip().rstrip('/')
+    if not url:
+        return url
+    lower = url.lower()
+    if lower.endswith('/v1/images/generations') or lower.endswith('/images/generations'):
+        return url
+    if lower.endswith('/v1'):
+        return url + '/images/generations'
+    return url + IMAGE_API_PATH_SUFFIX
+
+
+def validate_image_api_url(url: str) -> list[str]:
+    warnings: list[str] = []
+    if not url:
+        return warnings
+    normalized = normalize_image_api_url(url)
+    if normalized != url.rstrip('/'):
+        warnings.append(
+            f'MXM_GEN_IMAGE_URL will be normalized to include {IMAGE_API_PATH_SUFFIX} '
+            f'(was missing path — common cause of HTTP 404)'
+        )
+    if not normalized.lower().endswith('/v1/images/generations'):
+        warnings.append(
+            f'MXM_GEN_IMAGE_URL should end with {IMAGE_API_PATH_SUFFIX}; got: {url}'
+        )
+    return warnings
+
+
 @dataclass
 class ResearchConfig:
     api_key: str = ''
@@ -87,6 +120,8 @@ def load_image_config(project_dir: Path | None = None, assets_dir: Path | None =
         os.environ.get(_LEGACY_IMAGE['api_url'], ''),
         file_vals.get('rw_image_api_url', ''),
     )
+    if api_url:
+        api_url = normalize_image_api_url(api_url)
     api_key = _first(
         os.environ.get(MXM_GEN_IMAGE_KEY, ''),
         file_vals.get('mxm_gen_image_key', ''),

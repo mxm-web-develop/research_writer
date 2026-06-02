@@ -48,15 +48,34 @@ JSON one-liner also works:
 Copy `templates/image.env.example` → `image.env` (project root) or `.research_writer/image.env`:
 
 ```bash
-RW_IMAGE_API_URL=https://your-gateway.example/v1/images/generations
-RW_IMAGE_API_KEY=your-key
-RW_IMAGE_MODEL=gpt-image-2
-RW_IMAGE_SIZE=1024x1024
+MXM_GEN_IMAGE_KEY=your-key
+MXM_GEN_IMAGE_URL=https://your-gateway.example/v1/images/generations
+MXM_GEN_IMAGE_MODEL=gpt-image-2
+MXM_GEN_IMAGE_SIZE=1024x1024
 ```
 
-Or export env vars: `RW_IMAGE_API_URL`, `RW_IMAGE_API_KEY`, `RW_IMAGE_MODEL`.
+**URL must include the full OpenAI-compatible path** `/v1/images/generations`.  
+If you only set the gateway host (e.g. `https://api.example.com`), scripts auto-append the path — bare host often returns **HTTP 404**.
+
+Legacy `RW_IMAGE_*` env vars still work during transition.
 
 **Never commit API keys.**
+
+## API errors
+
+| HTTP | Meaning | Action |
+|------|---------|--------|
+| **404** | Wrong endpoint path | Ensure URL ends with `/v1/images/generations` |
+| **503** | Gateway down / overloaded | Retry later, or skip images and build PDF |
+| **401** | Invalid key | Check `MXM_GEN_IMAGE_KEY` |
+
+Skip failed images and continue:
+
+```bash
+python3 scripts/generate_images.py --input report.md --yes --skip-failed
+python3 scripts/build_bundle.py --input report.md --outdir output --sources sources.md
+# default: --stage images uses --dry-run; PDF builds with rw-image placeholders omitted
+```
 
 ## Build commands
 
