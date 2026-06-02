@@ -4,16 +4,27 @@
 
 支持 **本地资料扫描** 与 **Tavily 网络调研** 双路径；**10 类文档** 结构路由；以 `report.md` 为单一事实源，自动派生 PDF/PPT 等产物。
 
-## Install
+## Install（从 GitHub，不要用本地开发目录 rsync）
+
+**开发仓库**（如 `expert_skill/research_writer`）用于改代码并 push 到 GitHub。  
+**全局安装**应始终从 GitHub 拉取：
 
 ```bash
-git clone https://github.com/mxm-web-develop/research_writer.git
-cd research_writer
-python3 scripts/bootstrap.py --install
-python3 scripts/doctor.py
+git clone https://github.com/mxm-web-develop/research_writer.git /tmp/research_writer
+bash /tmp/research_writer/scripts/install_skill.sh
 ```
 
-将本目录复制到项目的 `.cursor/skills/research_writer/` 或全局 `~/.cursor/skills/research_writer/` 即可在 Cursor 中使用。
+安装位置（脚本自动创建符号链接）：
+
+| 环境 | 路径 |
+|------|------|
+| 源码副本 | `~/.agents/skills/research_writer/` |
+| Cursor | `~/.cursor/skills/research_writer/` → 同上 |
+| Claude Code | `~/.claude/skills/research_writer/` → 同上 |
+
+更新：`~/.agents/skills/research_writer/scripts/install_skill.sh`
+
+详见 `references/installation.md`。
 
 ## Environment (MXM)
 

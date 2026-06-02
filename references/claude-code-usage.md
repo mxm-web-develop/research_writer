@@ -1,10 +1,11 @@
 # Claude Code Usage
 
 ## Recommended Pattern
-1. Load the `research_writer` skill
-2. Use Claude Code to research and write `report.md`
-3. Complete `sources.md` (see `sources-format.md`)
-4. Run bundled scripts for downstream outputs
+1. Install skill from GitHub: `bash ~/.agents/skills/research_writer/scripts/install_skill.sh`
+2. Load the `research_writer` skill
+3. Use Claude Code to research and write `report.md`
+4. Complete `sources.md` (see `sources-format.md`)
+5. Run bundled scripts for downstream outputs
 
 ## Good Fit
 - bounded deep research tasks

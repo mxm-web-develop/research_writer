@@ -2,8 +2,13 @@
 
 ## Setup
 
-1. Copy this skill to `.cursor/skills/research_writer/` (project) or `~/.cursor/skills/research_writer/` (global).
-2. Copy `.cursor/rules/research-writer.mdc` into your project `.cursor/rules/` (covers `research-brief.md`, `report.md`, `sources.md`).
+1. **Install from GitHub** (not rsync from a dev checkout):
+
+```bash
+bash ~/.agents/skills/research_writer/scripts/install_skill.sh
+```
+
+2. Copy `.cursor/rules/research-writer.mdc` from the installed skill into your project `.cursor/rules/` (optional; enforces workflow on `report.md`).
 
 ## Research workflow (Agent)
 
