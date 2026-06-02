@@ -9,6 +9,10 @@ from pathlib import Path
 FRONTMATTER = re.compile(r'^---\s*\n(.*?)\n---\s*\n', re.DOTALL)
 BRIEF_TYPE = re.compile(r'^\|\s*document_type\s*\|\s*(.+?)\s*\|', re.MULTILINE | re.IGNORECASE)
 BRIEF_TYPE_ALT = re.compile(r'^document_type:\s*(.+)$', re.MULTILINE | re.IGNORECASE)
+BRIEF_TYPE_SECTION = re.compile(
+    r'(?:#{1,3}\s*)?(?:文档类型|Document Type|document_type)\s*\n+\s*[`\'"]?([\w-]+)',
+    re.IGNORECASE,
+)
 
 
 @dataclass(frozen=True)
@@ -134,12 +138,13 @@ DOC_TYPES: dict[str, DocTypeSpec] = {
         'product-manual',
         '产品说明书',
         (
-            '读者与目标',
-            '功能概览',
-            '使用方式',
-            '架构与实现',
-            '边界与限制',
-            'References',
+            '产品简介',
+            '安装',
+            '快速开始',
+            '功能',
+            '配置',
+            '隐私',
+            '常见问题',
         ),
         min_sources=3,
     ),
@@ -265,18 +270,46 @@ def get_doc_type(type_id: str | None) -> DocTypeSpec:
     return DOC_TYPES[DEFAULT_DOC_TYPE]
 
 
+def _normalize_type_id(raw: str) -> str | None:
+    candidate = raw.strip().strip('`').strip('"').strip("'")
+    return candidate if candidate in DOC_TYPES else None
+
+
 def parse_document_type(text: str) -> str | None:
     fm = FRONTMATTER.match(text)
     if fm:
         for line in fm.group(1).splitlines():
-            if line.strip().lower().startswith('document_type:'):
-                return line.split(':', 1)[1].strip()
+            key, _, val = line.partition(':')
+            if key.strip().lower() in ('document_type', 'document-type'):
+                found = _normalize_type_id(val)
+                if found:
+                    return found
+
     m = BRIEF_TYPE.search(text)
     if m:
-        return m.group(1).strip().strip('`')
+        found = _normalize_type_id(m.group(1))
+        if found:
+            return found
+
     m = BRIEF_TYPE_ALT.search(text)
     if m:
-        return m.group(1).strip()
+        found = _normalize_type_id(m.group(1))
+        if found:
+            return found
+
+    m = BRIEF_TYPE_SECTION.search(text)
+    if m:
+        found = _normalize_type_id(m.group(1))
+        if found:
+            return found
+
+    known = '|'.join(re.escape(k) for k in DOC_TYPES)
+    for match in re.finditer(rf'`({known})`', text):
+        start = max(0, match.start() - 150)
+        context = text[start:match.start()]
+        if re.search(r'文档类型|document_type', context, re.IGNORECASE):
+            return match.group(1)
+
     return None
 
 

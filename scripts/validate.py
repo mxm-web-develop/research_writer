@@ -14,6 +14,19 @@ from images import validate_images
 REPORT_SECTION_PATTERN = re.compile(r'^##\s+(.+)$', re.MULTILINE)
 
 
+def normalize_section_title(title: str) -> str:
+    return re.sub(r'^\d+(?:\.\d+)*\.?\s*', '', title).strip()
+
+
+def section_satisfied(required: str, found_titles: set[str]) -> bool:
+    req = normalize_section_title(required).lower()
+    for title in found_titles:
+        norm = normalize_section_title(title).lower()
+        if req == norm or req in norm or norm in req:
+            return True
+    return False
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description='Validate research_writer deliverables')
     parser.add_argument('--report', required=True)
@@ -50,7 +63,7 @@ def main() -> int:
         _, sections = split_sections(text)
         found = {s['title'] for s in sections}
         for req in doc_spec.required_sections:
-            if req not in found:
+            if not section_satisfied(req, found):
                 warnings.append(
                     f'report missing section for {doc_spec.id} ({doc_spec.label}): {req}'
                 )

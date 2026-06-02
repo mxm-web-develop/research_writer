@@ -36,8 +36,11 @@ def python_exe() -> str:
     return sys.executable
 
 
-def run_script(script: Path, args: list[str]) -> None:
-    subprocess.check_call([python_exe(), str(script), *args])
+def run_script(script: Path, args: list[str], *, check: bool = True) -> int:
+    result = subprocess.run([python_exe(), str(script), *args])
+    if check and result.returncode != 0:
+        raise subprocess.CalledProcessError(result.returncode, [str(script), *args])
+    return result.returncode
 
 
 def find_chrome() -> Path | None:
@@ -189,12 +192,17 @@ def slide_title_key(title: str) -> str:
 
 
 def count_sources(text: str) -> int:
-    headings = len(re.findall(r'^##\s+Source\s+\d+', text, re.MULTILINE | re.I))
+    headings = len(
+        re.findall(r'^##\s+(?:Source|来源)\s+\d+', text, re.MULTILINE | re.IGNORECASE)
+    )
     if headings:
         return headings
     urls = len(re.findall(r'https?://', text))
     if urls:
         return urls
+    local_paths = len(re.findall(r'file://|/`[^`]+`', text))
+    if local_paths:
+        return local_paths
     count = 0
     for line in text.splitlines():
         s = line.strip()

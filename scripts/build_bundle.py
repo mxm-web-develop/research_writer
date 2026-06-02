@@ -46,6 +46,7 @@ def main() -> int:
     parser.add_argument('--assets', default='assets', help='assets directory relative to report.md')
     parser.add_argument('--brief', default=None, help='path to research-brief.md (default: sibling of report)')
     parser.add_argument('--query', action='append', default=[], help='search query (with --stage search)')
+    parser.add_argument('--generate-images', action='store_true', help='call GPT-image API for pending rw-image directives')
     parser.add_argument('--yes', action='store_true', help='skip interactive image generation confirmation')
     args = parser.parse_args()
 
@@ -150,7 +151,10 @@ def main() -> int:
             '--assets', args.assets,
             '--brief', str(brief),
         ]
-        run_script(base / 'validate.py', validate_args)
+        validate_code = run_script(base / 'validate.py', validate_args, check=False)
+        if validate_code != 0:
+            print('Validate stage reported issues (artifacts above may still be built).', file=sys.stderr)
+            return validate_code
 
     if built:
         print('Built:')
